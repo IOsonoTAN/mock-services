@@ -1,0 +1,17 @@
+# Rust build artifacts
+/target
+
+# Git
+/.git
+/.gitignore
+
+# Editor/AI
+/.cursor
+/.vscode
+/.idea
+
+# Local env/config
+.env
+
+# OS junk
+.DS_Store

@@ -1,0 +1,31 @@
+POST http://localhost:3000/mocks
+Content-Type: application/json
+
+{
+  "method": "GET",
+  "path": "/ping",
+  "response_type": "text",
+  "response_data": "pong"
+}
+
+###
+
+POST http://localhost:3000/mocks
+Content-Type: application/json
+
+{
+  "method": "GET",
+  "path": "/json",
+  "response_type": "json",
+  "response_data": {
+    "message": "Hello, World!"
+  }
+}
+
+###
+
+GET http://localhost:3000/ping
+
+###
+
+GET http://localhost:3000/json
