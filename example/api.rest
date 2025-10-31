@@ -54,3 +54,17 @@ GET http://localhost:3000/json
 ###
 
 GET http://localhost:3000/bad-request
+
+###
+
+PATCH http://localhost:3000/mocks
+Content-Type: application/json
+
+{
+  "method": "GET",
+  "path": "/json",
+  "http_status_code": 201,
+  "response_data": {
+    "message": "The object has been created successfully."
+  }
+}

@@ -19,7 +19,7 @@ struct SharedState(Arc<AppState>);
 pub fn build_router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/", get(health_check))
-        .route("/mocks", post(create_mock))
+        .route("/mocks", post(create_mock).patch(patch_mock))
         .route("/*path", any(catch_all))
         .with_state(SharedState(state))
 }
@@ -103,6 +103,48 @@ async fn create_mock(State(state): State<SharedState>, req: Request) -> impl Int
         }
     } else {
         (StatusCode::UNSUPPORTED_MEDIA_TYPE, Json(json!({"error":"unsupported content-type"}))).into_response()
+    }
+}
+
+#[derive(Deserialize)]
+struct PatchMockRequest {
+    method: String,
+    path: String,
+    #[serde(default)]
+    http_status_code: Option<u16>,
+    #[serde(default)]
+    status_code: Option<u16>,
+    #[serde(default)]
+    status: Option<u16>,
+    #[serde(default)]
+    response_type: Option<ResponseType>,
+    #[serde(default)]
+    response_data: Option<JsonValue>,
+}
+
+async fn patch_mock(State(state): State<SharedState>, Json(body): Json<PatchMockRequest>) -> impl IntoResponse {
+    let method = body.method.to_uppercase();
+    let path = if body.path.starts_with('/') { body.path } else { format!("/{}", body.path) };
+
+    let mut set_doc = mongodb::bson::Document::new();
+    if let Some(code) = body.http_status_code.or(body.status_code).or(body.status) { set_doc.insert("http_status_code", code as i32); }
+    if let Some(rt) = body.response_type { set_doc.insert("response_type", mongodb::bson::to_bson(&rt).unwrap()); }
+    if let Some(data) = body.response_data { set_doc.insert("response_data", mongodb::bson::to_bson(&data).unwrap()); }
+
+    if set_doc.is_empty() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error":"no updatable fields provided"}))).into_response();
+    }
+
+    let filter = mongodb::bson::doc!{"method": &method, "path": &path};
+    let update = mongodb::bson::doc!{"$set": set_doc};
+    let opts = mongodb::options::UpdateOptions::builder().upsert(false).build();
+    match state.0.mocks.update_one(filter, update, opts).await {
+        Ok(res) if res.matched_count == 0 => (StatusCode::NOT_FOUND, Json(json!({"error":"mock not found"}))).into_response(),
+        Ok(_) => (StatusCode::OK, Json(json!({"status":"ok"}))).into_response(),
+        Err(e) => {
+            tracing::error!(error = ?e, "patch update_one failed");
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"internal"}))).into_response()
+        }
     }
 }
 
