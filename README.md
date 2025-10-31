@@ -14,11 +14,11 @@ MONGODB_DB=mock-services
 
 ## Run
 ```bash
-cargo run
+cargo start
 ```
-Or watch
+Or watch (requires `cargo install cargo-watch`)
 ```bash
-cargo watch -w src -x run
+cargo dev
 ```
 
 ## Create mock (JSON/text)
@@ -43,6 +43,13 @@ curl -X POST http://localhost:3000/mocks \
 curl -i http://localhost:3000/
 curl -i http://localhost:3000/ping
 curl -i http://localhost:3000/download/manual
+```
+
+## Update an existing mock (PATCH)
+```bash
+curl -X PATCH http://localhost:3000/mocks \
+  -H "Content-Type: application/json" \
+  -d '{"method":"GET","path":"/ping","http_status_code":201}'
 ```
 
 ## Docker
