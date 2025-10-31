@@ -2,13 +2,12 @@ use std::sync::Arc;
 
 use mongodb::{options::ClientOptions, Client, Collection, Database};
 
-use crate::models::{MockRoute, RequestLog};
+use crate::models::MockRoute;
 
 #[derive(Clone)]
 pub struct AppState {
     pub _db: Database,
     pub mocks: Collection<MockRoute>,
-    pub requests: Collection<RequestLog>,
 }
 
 impl AppState {
@@ -19,7 +18,6 @@ impl AppState {
         let client = Client::with_options(client_options)?;
         let db = client.database(&db_name);
         let mocks = db.collection::<MockRoute>("mocks");
-        let requests = db.collection::<RequestLog>("requests");
-        Ok(Arc::new(Self { _db: db, mocks, requests }))
+        Ok(Arc::new(Self { _db: db, mocks }))
     }
 }

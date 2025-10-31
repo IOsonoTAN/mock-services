@@ -28,7 +28,7 @@ pub async fn upsert_mock_json(state: &AppState, mut mock: MockRoute) -> Result<J
     }
 }
 
-pub async fn upsert_mock_file(state: &AppState, method: String, path: String, filename: String, bytes: Vec<u8>) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+pub async fn upsert_mock_file(state: &AppState, method: String, path: String, filename: String, bytes: Vec<u8>, status_code: u16) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let method = method.to_uppercase();
     let path = if path.starts_with('/') { path } else { format!("/{}", path) };
 
@@ -42,6 +42,7 @@ pub async fn upsert_mock_file(state: &AppState, method: String, path: String, fi
         id: None,
         method,
         path,
+        http_status_code: status_code,
         response_type: ResponseType::File,
         response_data: json!(dest.to_string_lossy().to_string()),
     };
@@ -66,23 +67,27 @@ pub async fn serve_mock(state: &AppState, method: &str, path: &str) -> Response 
     match state.mocks.find_one(filter, None).await {
         Ok(Some(mock)) => match mock.response_type {
             ResponseType::Json => {
-                let body = axum::Json(mock.response_data);
-                body.into_response()
+                let status = StatusCode::from_u16(mock.http_status_code).unwrap_or(StatusCode::OK);
+                (status, axum::Json(mock.response_data)).into_response()
             }
             ResponseType::Text => {
                 let text = mock.response_data.as_str().unwrap_or("").to_string();
-                Response::builder().status(StatusCode::OK).header(header::CONTENT_TYPE, "text/plain").body(Body::from(text)).unwrap()
+                let status = StatusCode::from_u16(mock.http_status_code).unwrap_or(StatusCode::OK);
+                Response::builder().status(status).header(header::CONTENT_TYPE, "text/plain").body(Body::from(text)).unwrap()
             }
             ResponseType::File => {
                 let path = mock.response_data.as_str().unwrap_or("");
                 let file = tokio::fs::read(path).await;
                 match file {
-                    Ok(bytes) => Response::builder()
-                        .status(StatusCode::OK)
+                    Ok(bytes) => {
+                        let status = StatusCode::from_u16(mock.http_status_code).unwrap_or(StatusCode::OK);
+                        Response::builder()
+                        .status(status)
                         .header(header::CONTENT_TYPE, "application/octet-stream")
                         .header(header::CONTENT_DISPOSITION, format!("attachment; filename=\"{}\"", std::path::Path::new(path).file_name().and_then(|s| s.to_str()).unwrap_or("download")))
                         .body(Body::from(bytes))
-                        .unwrap(),
+                        .unwrap()
+                    },
                     Err(_) => Response::builder().status(StatusCode::NOT_FOUND).body(Body::from("file not found")).unwrap(),
                 }
             }

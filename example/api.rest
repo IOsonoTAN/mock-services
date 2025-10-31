@@ -3,7 +3,8 @@ Content-Type: application/json
 
 {
   "method": "GET",
-  "path": "/ping",
+  "path": "/text",
+  "http_status_code": 200,
   "response_type": "text",
   "response_data": "pong"
 }
@@ -16,6 +17,7 @@ Content-Type: application/json
 {
   "method": "GET",
   "path": "/json",
+  "http_status_code": 201,
   "response_type": "json",
   "response_data": {
     "message": "Hello, World!"
@@ -24,8 +26,31 @@ Content-Type: application/json
 
 ###
 
-GET http://localhost:3000/ping
+POST http://localhost:3000/mocks
+Content-Type: application/json
+
+{
+  "method": "GET",
+  "path": "/bad-request",
+  "http_status_code": 400,
+  "response_type": "json",
+  "response_data": {
+    "error": "Bad Request"
+  }
+}
+
+###
+
+GET http://localhost:3000/
+
+###
+
+GET http://localhost:3000/text
 
 ###
 
 GET http://localhost:3000/json
+
+###
+
+GET http://localhost:3000/bad-request
