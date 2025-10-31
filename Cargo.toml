@@ -17,3 +17,5 @@ uuid = { version = "1", features = ["v4", "serde"] }
 time = { version = "0.3", features = ["formatting", "macros", "serde"] }
 tokio-util = "0.7"
 anyhow = "1"
+aws-config = "1"
+aws-sdk-s3 = "1"
