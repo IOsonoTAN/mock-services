@@ -1,0 +1,4 @@
+[alias]
+# Requires: cargo install cargo-watch
+dev = "watch -w src -x run"
+start = "run --release"
